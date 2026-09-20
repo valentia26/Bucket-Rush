@@ -8,7 +8,7 @@ public class Player : MonoBehaviour
     private Rigidbody rb;
 
     [SerializeField]
-    private float moveSpeed = 20f;
+    private float moveSpeed = 50f;
 
     [SerializeField]
     private float minX = -16f;

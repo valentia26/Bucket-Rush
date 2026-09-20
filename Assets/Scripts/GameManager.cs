@@ -36,6 +36,12 @@ public class GameManager : MonoBehaviour
     public TMP_Text countdownText;     // (ไม่บังคับ) ลาก UI Text มาใส่เพื่อแสดงตัวนับถอยหลังฝนเพชร (เช่น "3", "2", "1")
     public GameObject gameOverPanel;   // (ไม่บังคับ) แผง Game Over เมื่อพลังชีวิตหมด
 
+    [Header("Game Over UI - Score Summary")]
+    public TMP_Text finalScoreText;    // ลาก UI Text (บน gameOverPanel) มาใส่เพื่อแสดงคะแนนที่ได้ในตานี้
+    public TMP_Text bestScoreText;     // ลาก UI Text (บน gameOverPanel) มาใส่เพื่อแสดง Best Score ตลอดกาล
+
+    private const string BestScoreKey = "BestScore"; // key สำหรับเก็บ Best Score ใน PlayerPrefs
+
     private float timer;
     private float score = 0f;
     private bool isGameOver = false;
@@ -144,6 +150,7 @@ public class GameManager : MonoBehaviour
     }
 
     // เรียกจาก FallingItem.cs เมื่อไอเทมร่วงพ้นจอไปโดยไม่โดน player เก็บ
+    // (FallingItem.cs จะไม่เรียกฟังก์ชันนี้เลยถ้าไอเทมเป็น Rock หรือ Bomb)
     public void ItemMissed(FallingItem.ItemType type)
     {
         if (isGameOver) return;
@@ -185,12 +192,60 @@ public class GameManager : MonoBehaviour
     // เรียกเมื่อพลังชีวิตหมด (หรือจะเรียกตอนโดน bomb ก็ได้ถ้าต้องการให้จบเกมทันที)
     public void GameOver()
     {
+        if (isGameOver) return; // กันเรียกซ้ำ
+
         isGameOver = true;
+
+        // หยุด coroutine ทั้งหมดที่ยังค้างอยู่ (เช่นฝนเพชรที่กำลังนับถอยหลัง)
+        StopAllCoroutines();
+        diamondRainActive = false;
+        UpdateCountdownUI(0f); // เคลียร์ตัวเลขนับถอยหลังบนจอ ถ้ามีค้างอยู่
+
+        // ดึง Best Score เดิมที่เคยบันทึกไว้ในเครื่อง (ถ้าไม่เคยมีมาก่อนให้เริ่มที่ 0)
+        float previousBest = PlayerPrefs.GetFloat(BestScoreKey, 0f);
+
+        // เช็คว่าตานี้ทำคะแนนได้มากกว่าสถิติเดิมหรือไม่
+        bool isNewBest = score > previousBest;
+        float bestScore = isNewBest ? score : previousBest;
+
+        // ถ้าทำลายสถิติ ให้บันทึกค่าใหม่ลง PlayerPrefs แบบถาวร
+        if (isNewBest)
+        {
+            PlayerPrefs.SetFloat(BestScoreKey, bestScore);
+            PlayerPrefs.Save(); // เขียนลงดิสก์ทันที กันเกม/แอปปิดกะทันหันแล้วข้อมูลหาย
+        }
 
         if (gameOverPanel != null)
             gameOverPanel.SetActive(true);
 
-        Debug.Log("Game Over! Final Score: " + score);
+        // แสดงคะแนนที่ได้ในตานี้ และ Best Score บน UI ตอนจบเกม
+        if (finalScoreText != null)
+            finalScoreText.text = "Score: " + score.ToString("0.0");
+
+        if (bestScoreText != null)
+            bestScoreText.text = "Best Score: " + bestScore.ToString("0.0");
+
+        Debug.Log($"Game Over! Final Score: {score} | Best Score: {bestScore} {(isNewBest ? "(สถิติใหม่!)" : "")}");
+
+        // หยุดเวลาทั้งเกม — ไอเทมที่กำลังร่วงอยู่ (เคลื่อนที่ด้วย Time.deltaTime) จะหยุดนิ่งทันที
+        Time.timeScale = 0f;
+    }
+
+    // เรียกตอนกดปุ่ม Restart บนหน้า Game Over Panel
+    public void RestartGame()
+    {
+        Time.timeScale = 1f; // คืนค่าเวลาปกติก่อนโหลดฉากใหม่ ไม่งั้นเกมรอบใหม่จะค้างนิ่ง
+        UnityEngine.SceneManagement.SceneManager.LoadScene(
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex
+        );
+    }
+
+    // เผื่ออยากรีเซ็ต Best Score ตอนทดสอบ (คลิกขวาที่ component ใน Inspector แล้วเลือกคำสั่งนี้)
+    [ContextMenu("Reset Best Score")]
+    public void ResetBestScore()
+    {
+        PlayerPrefs.DeleteKey(BestScoreKey);
+        Debug.Log("[GameManager] Best Score ถูกรีเซ็ตแล้ว");
     }
 
     void UpdateScoreUI()

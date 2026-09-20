@@ -11,13 +11,13 @@ public class ItemSpawner : MonoBehaviour
     }
 
     [Header("Item List")]
-    public SpawnableItem[] items;      // ลิสต์ไอเทมทั้งหมดที่จะสุ่ม พร้อม weight
+   private SpawnableItem[] items;      // ลิสต์ไอเทมทั้งหมดที่จะสุ่ม พร้อม weight
 
     [Header("Spawn Settings")]
-    public float spawnInterval = 1f;   // เว้นระยะกี่วินาทีต่อการ spawn 1 ครั้ง
-    public float spawnY = 20f;          // ตำแหน่ง Y ที่จะ spawn (ขอบบนจอ)
-    public float minX = -16f;           // ขอบซ้ายสุดที่ spawn ได้
-    public float maxX = 19f;            // ขอบขวาสุดที่ spawn ได้
+   private float spawnInterval = 1f;   // เว้นระยะกี่วินาทีต่อการ spawn 1 ครั้ง
+    private float spawnY = 20f;          // ตำแหน่ง Y ที่จะ spawn (ขอบบนจอ)
+    private float minX = -14f;           // ขอบซ้ายสุดที่ spawn ได้
+   private float maxX = 17f;            // ขอบขวาสุดที่ spawn ได้
 
     private float timer;
     private float totalWeight;

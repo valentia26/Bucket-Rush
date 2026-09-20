@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 2551405946059266026}
   - component: {fileID: 6388427030922358502}
   - component: {fileID: 1872052124295224605}
+  - component: {fileID: 2455689099529699088}
   m_Layer: 0
   m_Name: SM_Rocks_06
   m_TagString: Untagged
@@ -138,3 +139,24 @@ MonoBehaviour:
   starScore: 1
   diamondScore: 10
   bombScore: -2
+--- !u!65 &2455689099529699088
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5514129879276577408}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.28318495, y: 0.24095784, z: 0.36278403}
+  m_Center: {x: -0.00000008195639, y: 0.12047892, z: 0.000000037252903}
