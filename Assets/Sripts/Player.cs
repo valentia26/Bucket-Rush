@@ -8,20 +8,19 @@ public class Player : MonoBehaviour
     private Rigidbody rb;
 
     [SerializeField]
-    private float moveSpeed = 5f;
+    private float moveSpeed = 20f;
 
     [SerializeField]
-    private float minX = -7f;
+    private float minX = -16f;
 
     [SerializeField]
-    private float maxX = 7f;
-
-    [Header("Slow Debuff (โดน rock)")]
-    [SerializeField]
-    private float slowAmount = 5f;     // ลดความเร็วลงเท่าไหร่ตอนโดน rock
+    private float maxX = 19f;
 
     [SerializeField]
-    private float slowDuration = 3f;   // โดนดีบัฟนานกี่วินาที
+    private float slowDuration = 3f;  
+
+    [SerializeField]
+    private float slowMultiplier = 0.5f; // ความช้าตอนโดนดีบัฟ (0.5 = ช้าลงครึ่งหนึ่ง)
 
     private float currentSpeed;
     private Coroutine slowRoutine;
@@ -33,20 +32,27 @@ public class Player : MonoBehaviour
 
     void Update()
     {
+        float move = 0f;
+
         if (Keyboard.current.dKey.isPressed)
         {
-            MoveRight();
+            move += 1f;
         }
 
         if (Keyboard.current.aKey.isPressed)
         {
-            MoveLeft();
+            move -= 1f;
+        }
+
+        if (move != 0f)
+        {
+            Move(move);
         }
     }
 
-    private void MoveRight()
+    private void Move(float direction)
     {
-        transform.position += Vector3.right * currentSpeed * Time.deltaTime;
+        transform.position += Vector3.right * direction * currentSpeed * Time.deltaTime;
 
         float x = Mathf.Clamp(transform.position.x, minX, maxX);
 
@@ -57,16 +63,24 @@ public class Player : MonoBehaviour
         );
     }
 
-    private void MoveLeft()
+    
+    public void ApplySlow()
     {
-        transform.position += Vector3.left * currentSpeed * Time.deltaTime;
+        if (slowRoutine != null)
+        {
+            StopCoroutine(slowRoutine);
+        }
 
-        float x = Mathf.Clamp(transform.position.x, minX, maxX);
+        slowRoutine = StartCoroutine(SlowRoutine());
+    }
 
-        transform.position = new Vector3(
-            x,
-            transform.position.y,
-            transform.position.z
-        );
+    private IEnumerator SlowRoutine()
+    {
+        currentSpeed = moveSpeed * slowMultiplier;
+
+        yield return new WaitForSeconds(slowDuration);
+
+        currentSpeed = moveSpeed;
+        slowRoutine = null;
     }
 }
