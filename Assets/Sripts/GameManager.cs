@@ -33,6 +33,7 @@ public class GameManager : MonoBehaviour
     public TMP_Text scoreText;         // ลาก UI Text มาใส่เพื่อแสดงคะแนน
     public TMP_Text livesText;         // (ไม่บังคับ) ลาก UI Text มาใส่เพื่อแสดงพลังชีวิต
     public TMP_Text comboText;         // (ไม่บังคับ) ลาก UI Text มาใส่เพื่อแสดงคอมโบปัจจุบัน
+    public TMP_Text countdownText;     // (ไม่บังคับ) ลาก UI Text มาใส่เพื่อแสดงตัวนับถอยหลังฝนเพชร (เช่น "3", "2", "1")
     public GameObject gameOverPanel;   // (ไม่บังคับ) แผง Game Over เมื่อพลังชีวิตหมด
 
     private float timer;
@@ -157,7 +158,16 @@ public class GameManager : MonoBehaviour
     private IEnumerator DiamondRainRoutine()
     {
         diamondRainActive = true;
-        yield return new WaitForSeconds(diamondRainDuration);
+
+        float remaining = diamondRainDuration;
+        while (remaining > 0f)
+        {
+            UpdateCountdownUI(remaining);
+            yield return null;
+            remaining -= Time.deltaTime;
+        }
+
+        UpdateCountdownUI(0f); // ซ่อนตัวเลขนับถอยหลังเมื่อหมดเวลา
         diamondRainActive = false;
     }
 
@@ -172,7 +182,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-   
+    // เรียกเมื่อพลังชีวิตหมด (หรือจะเรียกตอนโดน bomb ก็ได้ถ้าต้องการให้จบเกมทันที)
     public void GameOver()
     {
         isGameOver = true;
@@ -186,7 +196,7 @@ public class GameManager : MonoBehaviour
     void UpdateScoreUI()
     {
         if (scoreText != null)
-            scoreText.text = "Score: " + score.ToString("0.0");
+            scoreText.text = "Score: " + score.ToString("0.0"); // แสดงทศนิยม 1 ตำแหน่ง เช่น 0.5, 1.0, 10.0
     }
 
     void UpdateLivesUI()
@@ -199,5 +209,20 @@ public class GameManager : MonoBehaviour
     {
         if (comboText != null)
             comboText.text = "Combo: " + comboCount;
+    }
+
+    void UpdateCountdownUI(float secondsRemaining)
+    {
+        if (countdownText == null) return;
+
+        if (secondsRemaining <= 0f)
+        {
+            countdownText.text = "";
+        }
+        else
+        {
+            // ปัดขึ้นให้ขึ้นเลขเต็ม เช่น 2.9 วิ ให้แสดง "3"
+            countdownText.text = Mathf.CeilToInt(secondsRemaining).ToString();
+        }
     }
 }

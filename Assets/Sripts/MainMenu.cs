@@ -13,4 +13,14 @@ public class MainMenu : MonoBehaviour
     {
         
     }
+    public void StartNewGame()
+    {
+        Setting.fromSave = false;
+        SceneManager.LoadScene("Load");
+    }
+    public void ExitGame()
+    {
+        Application.Quit();
+    }
+
 }
