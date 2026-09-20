@@ -1,7 +1,13 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class MainMenu : MonoBehaviour
 {
+    [SerializeField]
+    private GameObject adjustPanel;
+
+    
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -15,8 +21,7 @@ public class MainMenu : MonoBehaviour
     }
     public void StartNewGame()
     {
-        Setting.fromSave = false;
-        SceneManager.LoadScene("Load");
+        SceneManager.LoadScene("Loading");
     }
     public void ExitGame()
     {
