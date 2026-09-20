@@ -1779,7 +1779,6 @@ MonoBehaviour:
   finalScoreText: {fileID: 236009227}
   bestScoreText: {fileID: 1995234237}
   pausePanel: {fileID: 400531810}
-  pauseKey: 27
 --- !u!4 &1346116858
 Transform:
   m_ObjectHideFlags: 0

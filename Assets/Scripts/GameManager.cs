@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem; // เพิ่ม using นี้เพื่อใช้ Input System ตัวใหม่แทน UnityEngine.Input
 using TMPro; // ถ้าใช้ Text ธรรมดาแทน TextMeshPro ให้เปลี่ยนเป็น using UnityEngine.UI; แล้วเปลี่ยนชนิดตัวแปร scoreText เป็น Text
 using System.Collections;
 
@@ -42,7 +43,8 @@ public class GameManager : MonoBehaviour
 
     [Header("Pause Settings")]
     public GameObject pausePanel;      // ลาก Panel ที่จะโชว์ตอนกด Pause มาใส่ (มีปุ่ม Resume / Exit อยู่ข้างใน)
-    public KeyCode pauseKey = KeyCode.Escape; // ปุ่มคีย์บอร์ดที่ใช้ Pause/Resume ได้ด้วย (นอกจากกดปุ่ม UI)
+    // หมายเหตุ: ใช้ Keyboard.current.escapeKey (Input System ใหม่) แทน KeyCode แบบเก่า
+    // ถ้าอยากเปลี่ยนปุ่ม ให้แก้ตรง Update() ตรงบรรทัดเช็ค escapeKey โดยตรง
     private bool isPaused = false;
 
     private const string BestScoreKey = "BestScore"; // key สำหรับเก็บ Best Score ใน PlayerPrefs
@@ -78,9 +80,9 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        // กดปุ่มคีย์บอร์ด (ปกติคือ Escape) เพื่อ Pause/Resume สลับกันไปมา
-        // เช็คก่อนเช็ค isGameOver เพราะอยาก pause ได้แม้กด Escape รัวๆ แต่จะกันไว้ไม่ให้ pause ได้ถ้าเกมจบไปแล้ว
-        if (!isGameOver && Input.GetKeyDown(pauseKey))
+        // กดปุ่ม Escape เพื่อ Pause/Resume สลับกันไปมา (ใช้ Input System ตัวใหม่แทน UnityEngine.Input)
+        // เช็ค Keyboard.current != null กันเคส build บางแพลตฟอร์มที่ไม่มีคีย์บอร์ดต่ออยู่ (เช่นมือถือ)
+        if (!isGameOver && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             if (isPaused)
                 ResumeGame();
@@ -268,7 +270,7 @@ public class GameManager : MonoBehaviour
         Debug.Log("[GameManager] Pause Game");
     }
 
-    // เรียกตอนกดปุ่ม Resume บน Pause Panel (หรือกดคีย์ pauseKey ซ้ำ)
+    // เรียกตอนกดปุ่ม Resume บน Pause Panel (หรือกด Escape ซ้ำ)
     public void ResumeGame()
     {
         if (isGameOver || !isPaused) return; // กันกด resume ตอนเกมจบ หรือกดตอนไม่ได้ pause อยู่
