@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro; // ถ้าใช้ Text ธรรมดาแทน TextMeshPro ให้เปลี่ยนเป็น using UnityEngine.UI; แล้วเปลี่ยนชนิดตัวแปร scoreText เป็น Text
+using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
@@ -13,13 +14,26 @@ public class GameManager : MonoBehaviour
 
     [Header("Spawn Settings")]
     public float spawnInterval = 1f;   // ระยะเวลาระหว่างการ spawn แต่ละครั้ง (วินาที)
-    public float minX = -4f;           // ขอบซ้ายของพื้นที่ spawn
-    public float maxX = 4f;            // ขอบขวาของพื้นที่ spawn
-    public float spawnY = 6f;          // ตำแหน่ง Y ที่ไอเทมจะเริ่มร่วงลงมา
+    public float minX = -16f;          // ขอบซ้ายของพื้นที่ spawn
+    public float maxX = 19f;           // ขอบขวาของพื้นที่ spawn
+    public float spawnY = 20f;         // ตำแหน่ง Y ที่ไอเทมจะเริ่มร่วงลงมา
+
+    [Header("Combo Settings")]
+    public int comboToTriggerRain = 5;     // เก็บติดกันกี่ครั้งถึงเข้าโหมดฝนเพชร
+    public float diamondRainDuration = 3f; // ฝนเพชรอยู่นานกี่วินาที
+    private int comboCount = 0;
+    private bool diamondRainActive = false;
+
+    [Header("Life Settings")]
+    public float maxHealth = 100f;
+    public float lifeLossPerMiss = 20f; // ของร่วงพื้น 1 ครั้ง ลดพลังชีวิตเท่านี้
+    private float currentHealth;
 
     [Header("UI")]
     public TMP_Text scoreText;         // ลาก UI Text มาใส่เพื่อแสดงคะแนน
-    public GameObject gameOverPanel;   // (ไม่บังคับ) แผง Game Over เมื่อโดน bomb
+    public TMP_Text livesText;         // (ไม่บังคับ) ลาก UI Text มาใส่เพื่อแสดงพลังชีวิต
+    public TMP_Text comboText;         // (ไม่บังคับ) ลาก UI Text มาใส่เพื่อแสดงคอมโบปัจจุบัน
+    public GameObject gameOverPanel;   // (ไม่บังคับ) แผง Game Over เมื่อพลังชีวิตหมด
 
     private float timer;
     private float score = 0f;
@@ -37,7 +51,11 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         timer = spawnInterval;
+        currentHealth = maxHealth;
+
         UpdateScoreUI();
+        UpdateLivesUI();
+        UpdateComboUI();
 
         if (gameOverPanel != null)
             gameOverPanel.SetActive(false);
@@ -57,16 +75,25 @@ public class GameManager : MonoBehaviour
 
     void SpawnRandomItem()
     {
-        // สุ่มเลือกไอเทม 1 ใน 4 ชนิด
-        int randomIndex = Random.Range(0, 4);
-        GameObject prefabToSpawn = null;
+        GameObject prefabToSpawn;
 
-        switch (randomIndex)
+        if (diamondRainActive)
         {
-            case 0: prefabToSpawn = rockPrefab; break;
-            case 1: prefabToSpawn = starPrefab; break;
-            case 2: prefabToSpawn = diamondPrefab; break;
-            case 3: prefabToSpawn = bombPrefab; break;
+            // โหมดฝนเพชร: spawn เป็น Diamond ล้วน ไม่สุ่มชนิดอื่น
+            prefabToSpawn = diamondPrefab;
+        }
+        else
+        {
+            // สุ่มเลือกไอเทม 1 ใน 4 ชนิดตามปกติ
+            int randomIndex = Random.Range(0, 4);
+            switch (randomIndex)
+            {
+                case 0: prefabToSpawn = rockPrefab; break;
+                case 1: prefabToSpawn = starPrefab; break;
+                case 2: prefabToSpawn = diamondPrefab; break;
+                case 3: prefabToSpawn = bombPrefab; break;
+                default: prefabToSpawn = null; break;
+            }
         }
 
         if (prefabToSpawn == null) return;
@@ -91,7 +118,61 @@ public class GameManager : MonoBehaviour
         UpdateScoreUI();
     }
 
-    // เรียกเมื่อโดนระเบิด (bomb)
+    // เรียกจาก FallingItem.cs ทุกครั้งที่ player เก็บไอเทมได้สำเร็จ (ใช้คุมคอมโบ)
+    public void ItemCaught(FallingItem.ItemType type)
+    {
+        if (isGameOver) return;
+
+        if (type == FallingItem.ItemType.Bomb)
+        {
+            // โดน bomb ถือว่าคอมโบขาด
+            comboCount = 0;
+        }
+        else
+        {
+            comboCount++;
+
+            if (comboCount >= comboToTriggerRain && !diamondRainActive)
+            {
+                StartCoroutine(DiamondRainRoutine());
+                comboCount = 0;
+            }
+        }
+
+        UpdateComboUI();
+    }
+
+    // เรียกจาก FallingItem.cs เมื่อไอเทมร่วงพ้นจอไปโดยไม่โดน player เก็บ
+    public void ItemMissed(FallingItem.ItemType type)
+    {
+        if (isGameOver) return;
+
+        // พลาดของ ถือว่าคอมโบขาดเช่นกัน
+        comboCount = 0;
+        UpdateComboUI();
+
+        LoseLife(lifeLossPerMiss);
+    }
+
+    private IEnumerator DiamondRainRoutine()
+    {
+        diamondRainActive = true;
+        yield return new WaitForSeconds(diamondRainDuration);
+        diamondRainActive = false;
+    }
+
+    private void LoseLife(float amount)
+    {
+        currentHealth = Mathf.Max(0f, currentHealth - amount);
+        UpdateLivesUI();
+
+        if (currentHealth <= 0f)
+        {
+            GameOver();
+        }
+    }
+
+   
     public void GameOver()
     {
         isGameOver = true;
@@ -105,6 +186,18 @@ public class GameManager : MonoBehaviour
     void UpdateScoreUI()
     {
         if (scoreText != null)
-            scoreText.text = "Score: " + score.ToString("0.0"); // แสดงทศนิยม 1 ตำแหน่ง เช่น 0.5, 1.0, 10.0
+            scoreText.text = "Score: " + score.ToString("0.0");
+    }
+
+    void UpdateLivesUI()
+    {
+        if (livesText != null)
+            livesText.text = "HP: " + currentHealth.ToString("0");
+    }
+
+    void UpdateComboUI()
+    {
+        if (comboText != null)
+            comboText.text = "Combo: " + comboCount;
     }
 }
