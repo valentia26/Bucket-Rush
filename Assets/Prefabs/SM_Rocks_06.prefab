@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 2795996539215933563}
   - component: {fileID: 8841981842478695493}
   - component: {fileID: 2551405946059266026}
-  - component: {fileID: -621615388452160598}
   - component: {fileID: 6388427030922358502}
   m_Layer: 0
   m_Name: SM_Rocks_06
@@ -92,21 +91,6 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &-621615388452160598
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5514129879276577408}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7a6b4c9b01e72d54fa0c92d4856609bd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FallingItem
-  itemType: 0
-  fallSpeed: 3
-  destroyBelowY: -6
 --- !u!54 &6388427030922358502
 Rigidbody:
   m_ObjectHideFlags: 0

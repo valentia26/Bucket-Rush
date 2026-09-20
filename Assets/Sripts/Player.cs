@@ -69,25 +69,4 @@ public class Player : MonoBehaviour
             transform.position.z
         );
     }
-
-    // เรียกจาก FallingItem.cs เมื่อเก็บ rock ได้
-    public void ApplySlow()
-    {
-        // ถ้ากำลังโดนดีบัฟอยู่แล้ว ให้รีเซ็ตนับเวลาใหม่ (ไม่ให้ลดซ้อนกันเรื่อยๆ)
-        if (slowRoutine != null)
-        {
-            StopCoroutine(slowRoutine);
-            currentSpeed = moveSpeed;
-        }
-
-        slowRoutine = StartCoroutine(SlowRoutine());
-    }
-
-    private IEnumerator SlowRoutine()
-    {
-        currentSpeed = Mathf.Max(0f, moveSpeed - slowAmount); // กันความเร็วติดลบ
-        yield return new WaitForSeconds(slowDuration);
-        currentSpeed = moveSpeed; // หมดเวลาดีบัฟ กลับสู่ความเร็วปกติ
-        slowRoutine = null;
-    }
 }

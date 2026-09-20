@@ -14870,7 +14870,6 @@ GameObject:
   m_Component:
   - component: {fileID: 5830794085472444084}
   - component: {fileID: 7334897590129256857}
-  - component: {fileID: 5444181962724270300}
   - component: {fileID: -5026489592638812155}
   m_Layer: 0
   m_Name: Bomb
@@ -14918,21 +14917,6 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: -2834383223314437085, guid: 8018b22f0f7d545e1975bf5b6186c050, type: 3}
---- !u!114 &5444181962724270300
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2595720090088871617}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7a6b4c9b01e72d54fa0c92d4856609bd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FallingItem
-  itemType: 3
-  fallSpeed: 3
-  destroyBelowY: -6
 --- !u!54 &-5026489592638812155
 Rigidbody:
   m_ObjectHideFlags: 0
