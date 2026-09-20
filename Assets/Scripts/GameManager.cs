@@ -40,6 +40,11 @@ public class GameManager : MonoBehaviour
     public TMP_Text finalScoreText;    // ลาก UI Text (บน gameOverPanel) มาใส่เพื่อแสดงคะแนนที่ได้ในตานี้
     public TMP_Text bestScoreText;     // ลาก UI Text (บน gameOverPanel) มาใส่เพื่อแสดง Best Score ตลอดกาล
 
+    [Header("Pause Settings")]
+    public GameObject pausePanel;      // ลาก Panel ที่จะโชว์ตอนกด Pause มาใส่ (มีปุ่ม Resume / Exit อยู่ข้างใน)
+    public KeyCode pauseKey = KeyCode.Escape; // ปุ่มคีย์บอร์ดที่ใช้ Pause/Resume ได้ด้วย (นอกจากกดปุ่ม UI)
+    private bool isPaused = false;
+
     private const string BestScoreKey = "BestScore"; // key สำหรับเก็บ Best Score ใน PlayerPrefs
 
     private float timer;
@@ -66,11 +71,24 @@ public class GameManager : MonoBehaviour
 
         if (gameOverPanel != null)
             gameOverPanel.SetActive(false);
+
+        if (pausePanel != null)
+            pausePanel.SetActive(false);
     }
 
     void Update()
     {
-        if (isGameOver) return;
+        // กดปุ่มคีย์บอร์ด (ปกติคือ Escape) เพื่อ Pause/Resume สลับกันไปมา
+        // เช็คก่อนเช็ค isGameOver เพราะอยาก pause ได้แม้กด Escape รัวๆ แต่จะกันไว้ไม่ให้ pause ได้ถ้าเกมจบไปแล้ว
+        if (!isGameOver && Input.GetKeyDown(pauseKey))
+        {
+            if (isPaused)
+                ResumeGame();
+            else
+                PauseGame();
+        }
+
+        if (isGameOver || isPaused) return;
 
         timer -= Time.deltaTime;
         if (timer <= 0f)
@@ -201,6 +219,11 @@ public class GameManager : MonoBehaviour
         diamondRainActive = false;
         UpdateCountdownUI(0f); // เคลียร์ตัวเลขนับถอยหลังบนจอ ถ้ามีค้างอยู่
 
+        // ถ้าเผลอกด Pause ค้างไว้ตอนจบเกมพอดี ให้ปิด Pause Panel ทิ้งไปด้วย
+        isPaused = false;
+        if (pausePanel != null)
+            pausePanel.SetActive(false);
+
         // ดึง Best Score เดิมที่เคยบันทึกไว้ในเครื่อง (ถ้าไม่เคยมีมาก่อนให้เริ่มที่ 0)
         float previousBest = PlayerPrefs.GetFloat(BestScoreKey, 0f);
 
@@ -231,13 +254,58 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 0f;
     }
 
+    // เรียกตอนกดปุ่ม Pause (ปุ่ม UI หรือคีย์บอร์ด)
+    public void PauseGame()
+    {
+        if (isGameOver || isPaused) return; // กันกด pause ตอนเกมจบ หรือกดซ้ำตอน pause อยู่แล้ว
+
+        isPaused = true;
+        Time.timeScale = 0f; // หยุดเวลาทั้งเกม ไอเทมที่ร่วงอยู่จะหยุดนิ่งทันที
+
+        if (pausePanel != null)
+            pausePanel.SetActive(true);
+
+        Debug.Log("[GameManager] Pause Game");
+    }
+
+    // เรียกตอนกดปุ่ม Resume บน Pause Panel (หรือกดคีย์ pauseKey ซ้ำ)
+    public void ResumeGame()
+    {
+        if (isGameOver || !isPaused) return; // กันกด resume ตอนเกมจบ หรือกดตอนไม่ได้ pause อยู่
+
+        isPaused = false;
+        Time.timeScale = 1f; // คืนเวลาให้เกมเดินต่อตามปกติ
+
+        if (pausePanel != null)
+            pausePanel.SetActive(false);
+
+        Debug.Log("[GameManager] Resume Game");
+    }
+
     // เรียกตอนกดปุ่ม Restart บนหน้า Game Over Panel
     public void RestartGame()
     {
+        isPaused = false; // เคลียร์สถานะ pause ก่อนโหลดฉากใหม่
         Time.timeScale = 1f; // คืนค่าเวลาปกติก่อนโหลดฉากใหม่ ไม่งั้นเกมรอบใหม่จะค้างนิ่ง
         UnityEngine.SceneManagement.SceneManager.LoadScene(
             UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex
         );
+    }
+
+    // เรียกตอนกดปุ่ม Exit ในหน้าเกมเพลย์ (Scene01) เพื่อออกจากเกมทั้งหมด
+    public void ExitGame()
+    {
+        Time.timeScale = 1f; // คืนค่าเวลาปกติก่อนออก เผื่อกดตอนเกม pause อยู่ (เช่นตอน Game Over หรือ Pause)
+
+        Debug.Log("Exit Game ถูกกด");
+
+#if UNITY_EDITOR
+        // ตอนทดสอบใน Unity Editor ให้หยุด Play Mode แทน เพราะ Application.Quit() ไม่ทำงานใน Editor
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        // ตอน build จริงเป็น .exe / .apk ฯลฯ จะปิดแอปพลิเคชันจริง
+        Application.Quit();
+#endif
     }
 
     // เผื่ออยากรีเซ็ต Best Score ตอนทดสอบ (คลิกขวาที่ component ใน Inspector แล้วเลือกคำสั่งนี้)
