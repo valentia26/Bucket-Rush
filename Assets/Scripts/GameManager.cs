@@ -162,7 +162,6 @@ public class GameManager : MonoBehaviour
             UiManager.Instance.UpdateCombo(comboCount);
     }
 
-    /
     public void ItemMissed(FallingItem.ItemType type)
     {
         if (isGameOver) return;
