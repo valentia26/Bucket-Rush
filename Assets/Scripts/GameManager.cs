@@ -23,8 +23,10 @@ public class GameManager : MonoBehaviour
     public int comboToTriggerRain = 5;     // เก็บติดกันกี่ครั้งถึงเข้าโหมดฝนเพชร
     public float diamondRainDuration = 10f; // ฝนเพชรอยู่นานกี่วินาที
     public float diamondRainSpawnInterval = 0.75f; // ระหว่างฝนเพชร spawn ถี่ขึ้นทุกกี่วินาที
+    public float postRainGracePeriod = 2.5f; // หลังฝนเพชรจบ ผ่อนผันไม่ลด HP กี่วิ (2-3 วิ) หรือจนกว่าเพชรบนจอจะหมด แล้วแต่อะไรถึงก่อน
     private int comboCount = 0;
     private bool diamondRainActive = false;
+    private bool inPostRainGrace = false; // อยู่ในช่วงผ่อนผันหลังฝนเพชรจบหรือไม่ (ระหว่างนี้ยังไม่ลด HP)
     private float normalSpawnInterval; // เก็บค่า spawnInterval ปกติไว้ เพื่อคืนค่ากลับหลังฝนเพชรจบ
 
     [Header("Life Settings")]
@@ -159,11 +161,12 @@ public class GameManager : MonoBehaviour
             // โดน bomb ถือว่าคอมโบขาด
             comboCount = 0;
         }
-        else
+        else if (!diamondRainActive)
         {
+            // นับคอมโบเฉพาะตอนนอกฝนเพชรเท่านั้น ระหว่างฝนเพชรเก็บเพชรได้เท่าไหร่ก็ไม่นับคอมโบเพิ่ม
             comboCount++;
 
-            if (comboCount >= comboToTriggerRain && !diamondRainActive)
+            if (comboCount >= comboToTriggerRain)
             {
                 StartCoroutine(DiamondRainRoutine());
                 comboCount = 0;
@@ -179,14 +182,11 @@ public class GameManager : MonoBehaviour
     {
         if (isGameOver) return;
 
-        // ระหว่างฝนเพชร ถือเป็นช่วงแจกแต้มล้วนๆ พลาดเพชรไปกี่ลูกก็ไม่ลดเลือด ไม่ตัดคอมโบ
-        if (diamondRainActive)
-        {
-            Debug.Log($"[GameManager] {type} พลาดระหว่างฝนเพชร (ไม่ลดเลือด เพราะเป็นช่วงแจกแต้ม)");
-            return;
-        }
+        // หมายเหตุ: ไม่ต้องเช็ค diamondRainActive / inPostRainGrace ตรงนี้แล้ว เพราะ LoseLife() ด้านล่าง
+        // เป็นจุดเดียวที่ตัดสินใจเรื่องลดเลือด และมันเช็คทั้งช่วงฝนเพชรและช่วงผ่อนผันให้เองแล้ว
+        // (กันลืมเช็คซ้ำหลายที่)
 
-        // พลาดของ ถือว่าคอมโบขาดเช่นกัน
+        // พลาดของ ถือว่าคอมโบขาดเช่นกัน (ขาดคอมโบได้ตามปกติ แม้ระหว่างฝนเพชรหรือช่วงผ่อนผัน)
         comboCount = 0;
         UpdateComboUI();
 
@@ -196,6 +196,10 @@ public class GameManager : MonoBehaviour
     private IEnumerator DiamondRainRoutine()
     {
         diamondRainActive = true;
+
+        // เคลียร์ไอเทมที่ spawn ไปก่อนหน้านี้และยังตกค้างอยู่บนจอ (ที่ไม่ใช่เพชร) ทิ้งทันที
+        // เพื่อให้ช่วงฝนเพชรทั้ง 10 วิ เห็นแต่เพชรล้วนๆ จริงๆ ไม่มีของเก่า (rock/star/bomb) หลงเหลือให้เห็น
+        ClearNonDiamondItemsOnScreen();
 
         // เก็บค่า spawnInterval ปกติไว้ก่อน แล้วเปลี่ยนเป็นค่าถี่ขึ้นระหว่างฝนเพชร
         normalSpawnInterval = spawnInterval;
@@ -215,10 +219,78 @@ public class GameManager : MonoBehaviour
 
         // คืนค่า spawnInterval กลับเป็นปกติหลังฝนเพชรจบ
         spawnInterval = normalSpawnInterval;
+
+        // รีเซ็ตคอมโบทิ้งทันทีที่ฝนเพชรจบ (ครบ 10 วิพอดี) เพื่อความชัวร์
+        // หมายเหตุ: ตอนนี้ระหว่างฝนเพชร ItemCaught จะไม่นับคอมโบเพิ่มอยู่แล้ว (ดูเงื่อนไข !diamondRainActive)
+        // เพราะฉะนั้น comboCount ควรเป็น 0 อยู่แล้วตั้งแต่ก่อนเข้าฝนเพชร แต่รีเซ็ตซ้ำตรงนี้ไว้กันเหนียว
+        comboCount = 0;
+        UpdateComboUI();
+
+        // เข้าสู่ช่วงผ่อนผันหลังฝนเพชรจบ: ยังไม่ลด HP จนกว่าเพชรที่ค้างอยู่บนจอจะหมด
+        // หรือจนกว่าจะครบ postRainGracePeriod วินาที (ประมาณ 2-3 วิ) แล้วแต่อะไรถึงก่อน
+        yield return StartCoroutine(PostRainGraceRoutine());
     }
 
+    // ช่วงผ่อนผันหลังฝนเพชรจบ ระหว่างนี้ diamondRainActive เป็น false แล้ว
+    // แต่ยังไม่ลด HP เพื่อรอให้ผู้เล่นเก็บเพชรที่ยังร่วงค้างอยู่บนจอให้หมดก่อน
+    private IEnumerator PostRainGraceRoutine()
+    {
+        inPostRainGrace = true;
+
+        float elapsed = 0f;
+        while (elapsed < postRainGracePeriod)
+        {
+            // ถ้าเพชรบนจอหมดแล้วก่อนครบเวลา ให้เลิกช่วงผ่อนผันได้เลยทันที ไม่ต้องรอจนครบ
+            if (!HasDiamondsOnScreen())
+                break;
+
+            yield return null;
+            elapsed += Time.deltaTime;
+        }
+
+        inPostRainGrace = false;
+    }
+
+    // เช็คว่ายังมีเพชร (ที่ตกค้างจากฝนเพชร) อยู่บนจอไหม ใช้ตอนช่วงผ่อนผันเพื่อตัดสินใจว่าจะเลิกผ่อนผันเร็วขึ้นได้หรือยัง
+    private bool HasDiamondsOnScreen()
+    {
+        FallingItem[] itemsOnScreen = FindObjectsOfType<FallingItem>();
+        foreach (FallingItem item in itemsOnScreen)
+        {
+            if (item.itemType == FallingItem.ItemType.Diamond)
+                return true;
+        }
+        return false;
+    }
+
+    // เคลียร์ไอเทมทุกชิ้นที่กำลังร่วงอยู่บนจอตอนนี้ ยกเว้น Diamond ทิ้งทั้งหมด
+    // เรียกตอนเริ่มฝนเพชร เพื่อกันไม่ให้ของเก่า (rock/star/bomb) ที่ spawn ไปก่อนหน้าตกค้างให้เห็นระหว่างฝนเพชร
+    private void ClearNonDiamondItemsOnScreen()
+    {
+        // ใช้ FindObjectsOfType เพราะไอเทมที่ร่วงอยู่ไม่ได้เก็บ reference ไว้ที่ GameManager
+        FallingItem[] itemsOnScreen = FindObjectsOfType<FallingItem>();
+
+        foreach (FallingItem item in itemsOnScreen)
+        {
+            if (item.itemType != FallingItem.ItemType.Diamond)
+            {
+                Destroy(item.gameObject);
+            }
+        }
+    }
+
+    // จุดเดียวที่ตัดสินใจลดเลือดจริงๆ ในเกม
+    // ระหว่างฝนเพชร (diamondRainActive) หรือช่วงผ่อนผันหลังฝนเพชรจบ (inPostRainGrace)
+    // จะไม่มีการลดเลือดเด็ดขาด ไม่ว่าจะเรียกมาจากที่ไหนก็ตาม
+    // (ครอบคลุมทั้ง ItemMissed และ TakeBombDamage หรือโค้ดอื่นที่อาจเรียก LoseLife ในอนาคต)
     private void LoseLife(float amount)
     {
+        if (diamondRainActive || inPostRainGrace)
+        {
+            Debug.Log("[GameManager] อยู่ระหว่างฝนเพชร หรือช่วงผ่อนผันหลังฝนเพชร ไม่มีการลดเลือด");
+            return;
+        }
+
         currentHealth = Mathf.Max(0f, currentHealth - amount);
         UpdateLivesUI();
 
@@ -244,7 +316,7 @@ public class GameManager : MonoBehaviour
 
         isGameOver = true;
 
-        // หยุด coroutine ทั้งหมดที่ยังค้างอยู่ (เช่นฝนเพชรที่กำลังนับถอยหลัง)
+        // หยุด coroutine ทั้งหมดที่ยังค้างอยู่ (เช่นฝนเพชรหรือช่วงผ่อนผันที่กำลังนับถอยหลัง)
         StopAllCoroutines();
 
         // ถ้า GameOver เกิดขึ้นระหว่างฝนเพชรกำลังทำงานอยู่ ต้องคืนค่า spawnInterval เอง
@@ -254,12 +326,8 @@ public class GameManager : MonoBehaviour
             spawnInterval = normalSpawnInterval;
         }
         diamondRainActive = false;
+        inPostRainGrace = false; // เคลียร์สถานะช่วงผ่อนผันด้วย เผื่อ GameOver เกิดขึ้นพอดีระหว่างช่วงผ่อนผัน
         UpdateCountdownUI(0f); // เคลียร์ตัวเลขนับถอยหลังบนจอ ถ้ามีค้างอยู่
-
-        // ถ้าเผลอกด Pause ค้างไว้ตอนจบเกมพอดี ให้ปิด Pause Panel ทิ้งไปด้วย
-        isPaused = false;
-        if (pausePanel != null)
-            pausePanel.SetActive(false);
 
         // ดึง Best Score เดิมที่เคยบันทึกไว้ในเครื่อง (ถ้าไม่เคยมีมาก่อนให้เริ่มที่ 0)
         float previousBest = PlayerPrefs.GetFloat(BestScoreKey, 0f);
