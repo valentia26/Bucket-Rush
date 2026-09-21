@@ -78,8 +78,6 @@ public class GameManager : MonoBehaviour
         if (gameOverPanel != null)
             gameOverPanel.SetActive(false);
 
-        if (pausePanel != null)
-            pausePanel.SetActive(false);
     }
 
     void Update()
@@ -362,15 +360,12 @@ public class GameManager : MonoBehaviour
     // เรียกตอนกดปุ่ม Pause (ปุ่ม UI หรือคีย์บอร์ด)
     public void PauseGame()
     {
-        if (isGameOver || isPaused) return; // กันกด pause ตอนเกมจบ หรือกดซ้ำตอน pause อยู่แล้ว
+        if (isGameOver || isPaused) return; 
 
-        isPaused = true;
+        
         Time.timeScale = 0f; // หยุดเวลาทั้งเกม ไอเทมที่ร่วงอยู่จะหยุดนิ่งทันที
 
-        if (pausePanel != null)
-            pausePanel.SetActive(true);
-
-        Debug.Log("[GameManager] Pause Game");
+        
     }
 
     // เรียกตอนกดปุ่ม Resume บน Pause Panel (หรือกด Escape ซ้ำ)
@@ -378,13 +373,10 @@ public class GameManager : MonoBehaviour
     {
         if (isGameOver || !isPaused) return; // กันกด resume ตอนเกมจบ หรือกดตอนไม่ได้ pause อยู่
 
-        isPaused = false;
+      
         Time.timeScale = 1f; // คืนเวลาให้เกมเดินต่อตามปกติ
 
-        if (pausePanel != null)
-            pausePanel.SetActive(false);
-
-        Debug.Log("[GameManager] Resume Game");
+        
     }
 
     // เรียกตอนกดปุ่ม Restart บนหน้า Game Over Panel
