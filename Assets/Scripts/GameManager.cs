@@ -14,9 +14,9 @@ public class GameManager : MonoBehaviour
     public GameObject bombPrefab;
 
     [Header("Spawn Settings")]
-    public float spawnInterval = 1f;   // ระยะเวลาระหว่างการ spawn แต่ละครั้ง (วินาที)
-    public float minX = -16f;          // ขอบซ้ายของพื้นที่ spawn
-    public float maxX = 19f;           // ขอบขวาของพื้นที่ spawn
+    public float spawnInterval = 0.75f;   // ระยะเวลาระหว่างการ spawn แต่ละครั้ง (วินาที)
+    public float minX = -12f;          // ขอบซ้ายของพื้นที่ spawn
+    public float maxX = 11f;           // ขอบขวาของพื้นที่ spawn
     public float spawnY = 20f;         // ตำแหน่ง Y ที่ไอเทมจะเริ่มร่วงลงมา
 
     [Header("Combo Settings")]
@@ -294,11 +294,10 @@ public class GameManager : MonoBehaviour
         );
     }
 
-    // เรียกตอนกดปุ่ม Exit ในหน้าเกมเพลย์ (Scene01) เพื่อออกจากเกมทั้งหมด
+    
     public void ExitGame()
     {
-        Time.timeScale = 1f; // คืนค่าเวลาปกติก่อนออก เผื่อกดตอนเกม pause อยู่ (เช่นตอน Game Over หรือ Pause)
-
+        Time.timeScale = 1f; 
         Debug.Log("Exit Game ถูกกด");
 
 #if UNITY_EDITOR
@@ -310,7 +309,6 @@ public class GameManager : MonoBehaviour
 #endif
     }
 
-    // เผื่ออยากรีเซ็ต Best Score ตอนทดสอบ (คลิกขวาที่ component ใน Inspector แล้วเลือกคำสั่งนี้)
     [ContextMenu("Reset Best Score")]
     public void ResetBestScore()
     {
@@ -333,7 +331,7 @@ public class GameManager : MonoBehaviour
     void UpdateComboUI()
     {
         if (comboText != null)
-            comboText.text = "Combo: " + comboCount;
+            comboText.text = "Combo " + comboCount;
     }
 
     void UpdateCountdownUI(float secondsRemaining)
@@ -346,7 +344,7 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            // ปัดขึ้นให้ขึ้นเลขเต็ม เช่น 2.9 วิ ให้แสดง "3"
+          
             countdownText.text = Mathf.CeilToInt(secondsRemaining).ToString();
         }
     }

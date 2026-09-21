@@ -135,7 +135,7 @@ MonoBehaviour:
   itemType: 0
   fallSpeed: 10
   destroyBelowY: 1
-  rockScore: 0.5
+  rockScore: -0.5
   starScore: 1
   diamondScore: 10
   bombScore: -2
