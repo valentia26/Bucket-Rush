@@ -1765,7 +1765,7 @@ MonoBehaviour:
   bombPrefab: {fileID: 2595720090088871617, guid: 732e12a252da64507987819a344450d8, type: 3}
   spawnInterval: 1
   minX: -12
-  maxX: 13
+  maxX: 12.9
   spawnY: 20
   comboToTriggerRain: 5
   diamondRainDuration: 10

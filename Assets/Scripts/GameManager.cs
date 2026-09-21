@@ -1,10 +1,11 @@
 using UnityEngine;
-using UnityEngine.InputSystem; // เพิ่ม using นี้เพื่อใช้ Input System ตัวใหม่แทน UnityEngine.Input
+using UnityEngine.InputSystem;
+using TMPro;
 using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
-    public static GameManager Instance; // Singleton เผื่อให้ FallingItem เรียกใช้ง่าย
+    public static GameManager Instance;
 
     [Header("Item Prefabs (ลาก Prefab มาใส่ตามลำดับ)")]
     public GameObject rockPrefab;
@@ -13,37 +14,42 @@ public class GameManager : MonoBehaviour
     public GameObject bombPrefab;
 
     [Header("Spawn Settings")]
-    public float spawnInterval = 0.75f;   // ระยะเวลาระหว่างการ spawn แต่ละครั้ง (วินาที)
-    public float minX = -16f;          // ขอบซ้ายของพื้นที่ spawn
-    public float maxX = 19f;           // ขอบขวาของพื้นที่ spawn
-    public float spawnY = 20f;         // ตำแหน่ง Y ที่ไอเทมจะเริ่มร่วงลงมา
+    public float spawnInterval = 0.75f;
+    public float minX = -16f;
+    public float maxX = 19f;
+    public float spawnY = 20f;
 
     [Header("Combo Settings")]
-    public int comboToTriggerRain = 5;     // เก็บติดกันกี่ครั้งถึงเข้าโหมดฝนเพชร
-    public float diamondRainDuration = 10f; // ฝนเพชรอยู่นานกี่วินาที
-    public float diamondRainSpawnInterval = 0.75f; // ระหว่างฝนเพชร spawn ถี่ขึ้นทุกกี่วินาที
-    public float postRainGracePeriod = 2.5f; // หลังฝนเพชรจบ ผ่อนผันไม่ลด HP กี่วิ (2-3 วิ) หรือจนกว่าเพชรบนจอจะหมด แล้วแต่อะไรถึงก่อน
+    public int comboToTriggerRain = 5;
+    public float diamondRainDuration = 10f;
+    public float diamondRainSpawnInterval = 0.75f;
+    public float postRainGracePeriod = 2.5f;
     private int comboCount = 0;
     private bool diamondRainActive = false;
-    private bool inPostRainGrace = false; // อยู่ในช่วงผ่อนผันหลังฝนเพชรจบหรือไม่ (ระหว่างนี้ยังไม่ลด HP)
-    private float normalSpawnInterval; // เก็บค่า spawnInterval ปกติไว้ เพื่อคืนค่ากลับหลังฝนเพชรจบ
+    private bool inPostRainGrace = false;
+    private float normalSpawnInterval;
 
     [Header("Life Settings")]
     public float maxHealth = 100f;
-    public float lifeLossPerMiss = 20f; // ของร่วงพื้น 1 ครั้ง ลดพลังชีวิตเท่านี้
+    public float lifeLossPerMiss = 20f;
     private float currentHealth;
 
-    // หมายเหตุ: ข้อความ/UI ทั้งหมด (score, lives, combo, countdown, game over panel)
-    // ย้ายไปให้ UiManager.cs จัดการแทนแล้ว GameManager แค่เรียก UiManager.Instance.Xxx(...)
-    // เพื่อบอกค่าที่เปลี่ยนไป ไม่ต้องลาก UI Text มาใส่ที่นี่อีกต่อไป
+    [Header("UI")]
+    public TMP_Text scoreText;
+    public TMP_Text livesText;
+    public TMP_Text comboText;
+    public TMP_Text countdownText;
+    public GameObject gameOverPanel;
+
+    [Header("Game Over UI - Score Summary")]
+    public TMP_Text finalScoreText;
+    public TMP_Text bestScoreText;
 
     [Header("Pause Settings")]
-    public GameObject pausePanel;      // ลาก Panel ที่จะโชว์ตอนกด Pause มาใส่ (มีปุ่ม Resume / Exit อยู่ข้างใน)
-    // หมายเหตุ: ใช้ Keyboard.current.escapeKey (Input System ใหม่) แทน KeyCode แบบเก่า
-    // ถ้าอยากเปลี่ยนปุ่ม ให้แก้ตรง Update() ตรงบรรทัดเช็ค escapeKey โดยตรง
+    public GameObject pausePanel;
     private bool isPaused = false;
 
-    private const string BestScoreKey = "BestScore"; // key สำหรับเก็บ Best Score ใน PlayerPrefs
+    private const string BestScoreKey = "BestScore";
 
     private float timer;
     private float score = 0f;
@@ -51,7 +57,6 @@ public class GameManager : MonoBehaviour
 
     void Awake()
     {
-        // ตั้งค่า Singleton
         if (Instance == null)
             Instance = this;
         else
@@ -63,19 +68,17 @@ public class GameManager : MonoBehaviour
         timer = spawnInterval;
         currentHealth = maxHealth;
 
-        if (UiManager.Instance != null)
-        {
-            UiManager.Instance.UpdateScore(score);
-            UiManager.Instance.UpdateLives(currentHealth);
-            UiManager.Instance.UpdateCombo(comboCount);
-        }
+        UpdateScoreUI();
+        UpdateLivesUI();
+        UpdateComboUI();
 
-     
+        if (gameOverPanel != null)
+            gameOverPanel.SetActive(false);
+
     }
 
     void Update()
     {
-        
         if (!isGameOver && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             if (isPaused)
@@ -100,12 +103,10 @@ public class GameManager : MonoBehaviour
 
         if (diamondRainActive)
         {
-           
             prefabToSpawn = diamondPrefab;
         }
         else
         {
-           
             int randomIndex = Random.Range(0, 4);
             switch (randomIndex)
             {
@@ -119,11 +120,10 @@ public class GameManager : MonoBehaviour
 
         if (prefabToSpawn == null) return;
 
-       float randomX = Random.Range(minX, maxX);
+        float randomX = Random.Range(minX, maxX);
         Vector3 spawnPos = new Vector3(randomX, spawnY, 0f);
 
         Instantiate(prefabToSpawn, spawnPos, Quaternion.identity);
-       
     }
 
     public void AddScore(float amount)
@@ -132,23 +132,19 @@ public class GameManager : MonoBehaviour
 
         score += amount;
 
-        if (UiManager.Instance != null)
-            UiManager.Instance.UpdateScore(score);
+        UpdateScoreUI();
     }
 
-   
     public void ItemCaught(FallingItem.ItemType type)
     {
         if (isGameOver) return;
 
         if (type == FallingItem.ItemType.Bomb)
         {
-           
             comboCount = 0;
         }
         else if (!diamondRainActive)
         {
-           
             comboCount++;
 
             if (comboCount >= comboToTriggerRain)
@@ -158,18 +154,15 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        if (UiManager.Instance != null)
-            UiManager.Instance.UpdateCombo(comboCount);
+        UpdateComboUI();
     }
 
     public void ItemMissed(FallingItem.ItemType type)
     {
         if (isGameOver) return;
 
-        
         comboCount = 0;
-        if (UiManager.Instance != null)
-            UiManager.Instance.UpdateCombo(comboCount);
+        UpdateComboUI();
 
         LoseLife(lifeLossPerMiss);
     }
@@ -182,33 +175,27 @@ public class GameManager : MonoBehaviour
 
         normalSpawnInterval = spawnInterval;
         spawnInterval = diamondRainSpawnInterval;
-        timer = 0f; 
+        timer = 0f;
 
         float remaining = diamondRainDuration;
         while (remaining > 0f)
         {
-            if (UiManager.Instance != null)
-                UiManager.Instance.UpdateCountdown(remaining);
+            UpdateCountdownUI(remaining);
             yield return null;
             remaining -= Time.deltaTime;
         }
 
-        if (UiManager.Instance != null)
-            UiManager.Instance.UpdateCountdown(0f); // ซ่อนตัวเลขนับถอยหลังเมื่อหมดเวลา
+        UpdateCountdownUI(0f);
         diamondRainActive = false;
 
-      
         spawnInterval = normalSpawnInterval;
 
         comboCount = 0;
-        if (UiManager.Instance != null)
-            UiManager.Instance.UpdateCombo(comboCount);
+        UpdateComboUI();
 
-     
         yield return StartCoroutine(PostRainGraceRoutine());
     }
 
-    
     private IEnumerator PostRainGraceRoutine()
     {
         inPostRainGrace = true;
@@ -216,7 +203,6 @@ public class GameManager : MonoBehaviour
         float elapsed = 0f;
         while (elapsed < postRainGracePeriod)
         {
-            
             if (!HasDiamondsOnScreen())
                 break;
 
@@ -227,7 +213,6 @@ public class GameManager : MonoBehaviour
         inPostRainGrace = false;
     }
 
-    
     private bool HasDiamondsOnScreen()
     {
         FallingItem[] itemsOnScreen = FindObjectsOfType<FallingItem>();
@@ -239,10 +224,8 @@ public class GameManager : MonoBehaviour
         return false;
     }
 
-    
     private void ClearNonDiamondItemsOnScreen()
     {
-       
         FallingItem[] itemsOnScreen = FindObjectsOfType<FallingItem>();
 
         foreach (FallingItem item in itemsOnScreen)
@@ -254,18 +237,15 @@ public class GameManager : MonoBehaviour
         }
     }
 
- 
     private void LoseLife(float amount)
     {
         if (diamondRainActive || inPostRainGrace)
         {
-            Debug.Log("[GameManager] อยู่ระหว่างฝนเพชร หรือช่วงผ่อนผันหลังฝนเพชร ไม่มีการลดเลือด");
             return;
         }
 
         currentHealth = Mathf.Max(0f, currentHealth - amount);
-        if (UiManager.Instance != null)
-            UiManager.Instance.UpdateLives(currentHealth);
+        UpdateLivesUI();
 
         if (currentHealth <= 0f)
         {
@@ -280,89 +260,77 @@ public class GameManager : MonoBehaviour
         LoseLife(amount);
     }
 
-    
     public void GameOver()
     {
-        if (isGameOver) return; 
+        if (isGameOver) return;
 
         isGameOver = true;
 
-       
         StopAllCoroutines();
 
-        
         if (diamondRainActive)
         {
             spawnInterval = normalSpawnInterval;
         }
         diamondRainActive = false;
-        inPostRainGrace = false; 
-
-        if (UiManager.Instance != null)
-            UiManager.Instance.UpdateCountdown(0f); // เคลียร์ตัวเลขนับถอยหลังบนจอ ถ้ามีค้างอยู่
+        inPostRainGrace = false;
+        UpdateCountdownUI(0f);
 
         float previousBest = PlayerPrefs.GetFloat(BestScoreKey, 0f);
 
-      
         bool isNewBest = score > previousBest;
         float bestScore = isNewBest ? score : previousBest;
 
-      
         if (isNewBest)
         {
             PlayerPrefs.SetFloat(BestScoreKey, bestScore);
-            PlayerPrefs.Save(); 
+            PlayerPrefs.Save();
         }
 
-        
-        if (UiManager.Instance != null)
-            UiManager.Instance.ShowGameOver(score, bestScore, isNewBest);
+        if (gameOverPanel != null)
+            gameOverPanel.SetActive(true);
 
-        Debug.Log($"Game Over! Final Score: {score} | Best Score: {bestScore} {(isNewBest ? "(สถิติใหม่!)" : "")}");
+        if (finalScoreText != null)
+            finalScoreText.text = "Score: " + score.ToString("0.0");
 
-       
+        if (bestScoreText != null)
+            bestScoreText.text = "Best Score: " + bestScore.ToString("0.0");
+
         Time.timeScale = 0f;
     }
 
-   
     public void PauseGame()
     {
         if (isGameOver || isPaused) return;
 
         isPaused = true;
-        Time.timeScale = 0f; 
+        Time.timeScale = 0f;
     }
 
- 
     public void ResumeGame()
     {
-        if (isGameOver || !isPaused) return; 
+        if (isGameOver || !isPaused) return;
 
         isPaused = false;
-        Time.timeScale = 1f; 
+        Time.timeScale = 1f;
     }
 
     public void RestartGame()
     {
-        isPaused = false; 
-        Time.timeScale = 1f; 
+        isPaused = false;
+        Time.timeScale = 1f;
         UnityEngine.SceneManagement.SceneManager.LoadScene(
             UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex
         );
     }
 
-  
     public void ExitGame()
     {
-        Time.timeScale = 1f; 
-
-        Debug.Log("Exit Game ถูกกด");
+        Time.timeScale = 1f;
 
 #if UNITY_EDITOR
-        // ตอนทดสอบใน Unity Editor ให้หยุด Play Mode แทน เพราะ Application.Quit() ไม่ทำงานใน Editor
         UnityEditor.EditorApplication.isPlaying = false;
 #else
-      
         Application.Quit();
 #endif
     }
@@ -371,6 +339,37 @@ public class GameManager : MonoBehaviour
     public void ResetBestScore()
     {
         PlayerPrefs.DeleteKey(BestScoreKey);
-        Debug.Log("[GameManager] Best Score ถูกรีเซ็ตแล้ว");
+    }
+
+    void UpdateScoreUI()
+    {
+        if (scoreText != null)
+            scoreText.text = "Score: " + score.ToString("0.0");
+    }
+
+    void UpdateLivesUI()
+    {
+        if (livesText != null)
+            livesText.text = "HP: " + currentHealth.ToString("0");
+    }
+
+    void UpdateComboUI()
+    {
+        if (comboText != null)
+            comboText.text = "Combo: " + comboCount;
+    }
+
+    void UpdateCountdownUI(float secondsRemaining)
+    {
+        if (countdownText == null) return;
+
+        if (secondsRemaining <= 0f)
+        {
+            countdownText.text = "";
+        }
+        else
+        {
+            countdownText.text = Mathf.CeilToInt(secondsRemaining).ToString();
+        }
     }
 }
