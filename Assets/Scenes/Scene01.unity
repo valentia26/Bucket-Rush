@@ -1146,8 +1146,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 512, y: 139}
-  m_SizeDelta: {x: 200, y: 50}
+  m_AnchoredPosition: {x: 827.0326, y: 299.64886}
+  m_SizeDelta: {x: 265.937, y: 56.1843}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &805406028
 MonoBehaviour:
@@ -1235,7 +1235,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_margin: {x: -2.0333252, y: 0, z: -3.8449707, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -1411,8 +1411,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 512, y: 70}
-  m_SizeDelta: {x: 200, y: 50}
+  m_AnchoredPosition: {x: 829.2254, y: 105}
+  m_SizeDelta: {x: 220.566, y: 121.3099}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1115945352
 MonoBehaviour:
@@ -1764,11 +1764,13 @@ MonoBehaviour:
   diamondPrefab: {fileID: 8624046903062039426, guid: 6305fca550ce94881aa8ea45469786ae, type: 3}
   bombPrefab: {fileID: 2595720090088871617, guid: 732e12a252da64507987819a344450d8, type: 3}
   spawnInterval: 1
-  minX: -14
-  maxX: 17
+  minX: -12
+  maxX: 13
   spawnY: 20
   comboToTriggerRain: 5
   diamondRainDuration: 3
+  diamondRainSpawnInterval: 0.1
+  diamondRainFallSpeed: 200
   maxHealth: 100
   lifeLossPerMiss: 20
   scoreText: {fileID: 805406028}
@@ -1828,7 +1830,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 521, y: 0}
+  m_AnchoredPosition: {x: 848.15, y: -13}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1460897647
@@ -2547,8 +2549,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 512, y: 206}
-  m_SizeDelta: {x: 200, y: 50}
+  m_AnchoredPosition: {x: 829.23, y: 221}
+  m_SizeDelta: {x: 213.9838, y: 66.3317}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1981326961
 MonoBehaviour:
@@ -2636,7 +2638,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_margin: {x: 0, y: -6.4918213, z: -2.7023926, w: 0}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0

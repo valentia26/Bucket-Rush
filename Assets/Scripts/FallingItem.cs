@@ -15,6 +15,9 @@ public class FallingItem : MonoBehaviour
     public float diamondScore = 10f;
     public float bombScore = -2f;
 
+    [Header("Bomb Damage")]
+    public float bombDamage = 10f; // ลดพลังชีวิตเท่านี้ ถ้า Player เก็บ Bomb โดยตรง (โดน OnTriggerEnter)
+
     private bool collected = false; // กันไม่ให้นับซ้ำหรือ trigger ซ้ำ
 
     void Update()
@@ -90,7 +93,8 @@ public class FallingItem : MonoBehaviour
                 break;
 
             case ItemType.Bomb:
-                GameManager.Instance.AddScore(bombScore); // โดน Player เก็บระเบิดโดยตรง ถึงจะหักแต้ม/เลือด
+                GameManager.Instance.AddScore(bombScore);           // โดน Player เก็บระเบิดโดยตรง หักแต้มเหมือนเดิม
+                GameManager.Instance.TakeBombDamage(bombDamage);    // เพิ่มใหม่: ลดพลังชีวิตด้วยเมื่อโดนเก็บ Bomb โดยตรง
                 break;
         }
 
