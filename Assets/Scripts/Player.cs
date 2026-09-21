@@ -34,12 +34,12 @@ public class Player : MonoBehaviour
     {
         float move = 0f;
 
-        if (Keyboard.current.dKey.isPressed)
+        if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed)
         {
             move += 1f;
         }
 
-        if (Keyboard.current.aKey.isPressed)
+        if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed)
         {
             move -= 1f;
         }

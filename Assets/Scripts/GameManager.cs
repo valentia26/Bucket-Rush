@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.InputSystem; // เพิ่ม using นี้เพื่อใช้ Input System ตัวใหม่แทน UnityEngine.Input
-using TMPro; // ถ้าใช้ Text ธรรมดาแทน TextMeshPro ให้เปลี่ยนเป็น using UnityEngine.UI; แล้วเปลี่ยนชนิดตัวแปร scoreText เป็น Text
 using System.Collections;
 
 public class GameManager : MonoBehaviour
@@ -34,16 +33,9 @@ public class GameManager : MonoBehaviour
     public float lifeLossPerMiss = 20f; // ของร่วงพื้น 1 ครั้ง ลดพลังชีวิตเท่านี้
     private float currentHealth;
 
-    [Header("UI")]
-    public TMP_Text scoreText;         // ลาก UI Text มาใส่เพื่อแสดงคะแนน
-    public TMP_Text livesText;         // (ไม่บังคับ) ลาก UI Text มาใส่เพื่อแสดงพลังชีวิต
-    public TMP_Text comboText;         // (ไม่บังคับ) ลาก UI Text มาใส่เพื่อแสดงคอมโบปัจจุบัน
-    public TMP_Text countdownText;     // (ไม่บังคับ) ลาก UI Text มาใส่เพื่อแสดงตัวนับถอยหลังฝนเพชร (เช่น "3", "2", "1")
-    public GameObject gameOverPanel;   // (ไม่บังคับ) แผง Game Over เมื่อพลังชีวิตหมด
-
-    [Header("Game Over UI - Score Summary")]
-    public TMP_Text finalScoreText;    // ลาก UI Text (บน gameOverPanel) มาใส่เพื่อแสดงคะแนนที่ได้ในตานี้
-    public TMP_Text bestScoreText;     // ลาก UI Text (บน gameOverPanel) มาใส่เพื่อแสดง Best Score ตลอดกาล
+    // หมายเหตุ: ข้อความ/UI ทั้งหมด (score, lives, combo, countdown, game over panel)
+    // ย้ายไปให้ UiManager.cs จัดการแทนแล้ว GameManager แค่เรียก UiManager.Instance.Xxx(...)
+    // เพื่อบอกค่าที่เปลี่ยนไป ไม่ต้องลาก UI Text มาใส่ที่นี่อีกต่อไป
 
     [Header("Pause Settings")]
     public GameObject pausePanel;      // ลาก Panel ที่จะโชว์ตอนกด Pause มาใส่ (มีปุ่ม Resume / Exit อยู่ข้างใน)
@@ -71,19 +63,19 @@ public class GameManager : MonoBehaviour
         timer = spawnInterval;
         currentHealth = maxHealth;
 
-        UpdateScoreUI();
-        UpdateLivesUI();
-        UpdateComboUI();
+        if (UiManager.Instance != null)
+        {
+            UiManager.Instance.UpdateScore(score);
+            UiManager.Instance.UpdateLives(currentHealth);
+            UiManager.Instance.UpdateCombo(comboCount);
+        }
 
-        if (gameOverPanel != null)
-            gameOverPanel.SetActive(false);
-
+     
     }
 
     void Update()
     {
-        // กดปุ่ม Escape เพื่อ Pause/Resume สลับกันไปมา (ใช้ Input System ตัวใหม่แทน UnityEngine.Input)
-        // เช็ค Keyboard.current != null กันเคส build บางแพลตฟอร์มที่ไม่มีคีย์บอร์ดต่ออยู่ (เช่นมือถือ)
+        
         if (!isGameOver && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             if (isPaused)
@@ -108,12 +100,12 @@ public class GameManager : MonoBehaviour
 
         if (diamondRainActive)
         {
-            // โหมดฝนเพชร: spawn เป็น Diamond ล้วน ไม่สุ่มชนิดอื่น
+           
             prefabToSpawn = diamondPrefab;
         }
         else
         {
-            // สุ่มเลือกไอเทม 1 ใน 4 ชนิดตามปกติ
+           
             int randomIndex = Random.Range(0, 4);
             switch (randomIndex)
             {
@@ -127,41 +119,36 @@ public class GameManager : MonoBehaviour
 
         if (prefabToSpawn == null) return;
 
-        // สุ่มตำแหน่ง X
-        float randomX = Random.Range(minX, maxX);
+       float randomX = Random.Range(minX, maxX);
         Vector3 spawnPos = new Vector3(randomX, spawnY, 0f);
 
         Instantiate(prefabToSpawn, spawnPos, Quaternion.identity);
-        // หมายเหตุ: ไม่บังคับ fallSpeed พิเศษระหว่างฝนเพชรแล้ว — เพชรจะร่วงด้วยความเร็วปกติ
-        // ตามค่า fallSpeed ที่ตั้งไว้ใน Diamond Prefab เหมือนตอน spawn ปกติทุกประการ
+       
     }
 
-    // เรียกจาก FallingItem.cs เมื่อ player เก็บไอเทมได้ (amount เป็น float เพราะ rock ให้แต้มแบบ 0.5)
     public void AddScore(float amount)
     {
         if (isGameOver) return;
 
         score += amount;
-        // หมายเหตุ: ตอนนี้ปล่อยให้คะแนนติดลบได้ (เช่นโดน bomb ตอนแต้มน้อย)
-        // ถ้าต้องการกันไม่ให้ติดลบ ให้เปิดใช้บรรทัดล่างนี้แทน:
-        // if (score < 0) score = 0;
 
-        UpdateScoreUI();
+        if (UiManager.Instance != null)
+            UiManager.Instance.UpdateScore(score);
     }
 
-    // เรียกจาก FallingItem.cs ทุกครั้งที่ player เก็บไอเทมได้สำเร็จ (ใช้คุมคอมโบ)
+   
     public void ItemCaught(FallingItem.ItemType type)
     {
         if (isGameOver) return;
 
         if (type == FallingItem.ItemType.Bomb)
         {
-            // โดน bomb ถือว่าคอมโบขาด
+           
             comboCount = 0;
         }
         else if (!diamondRainActive)
         {
-            // นับคอมโบเฉพาะตอนนอกฝนเพชรเท่านั้น ระหว่างฝนเพชรเก็บเพชรได้เท่าไหร่ก็ไม่นับคอมโบเพิ่ม
+           
             comboCount++;
 
             if (comboCount >= comboToTriggerRain)
@@ -171,22 +158,19 @@ public class GameManager : MonoBehaviour
             }
         }
 
-        UpdateComboUI();
+        if (UiManager.Instance != null)
+            UiManager.Instance.UpdateCombo(comboCount);
     }
 
-    // เรียกจาก FallingItem.cs เมื่อไอเทมร่วงพ้นจอไปโดยไม่โดน player เก็บ
-    // (FallingItem.cs จะไม่เรียกฟังก์ชันนี้เลยถ้าไอเทมเป็น Rock หรือ Bomb)
+    /
     public void ItemMissed(FallingItem.ItemType type)
     {
         if (isGameOver) return;
 
-        // หมายเหตุ: ไม่ต้องเช็ค diamondRainActive / inPostRainGrace ตรงนี้แล้ว เพราะ LoseLife() ด้านล่าง
-        // เป็นจุดเดียวที่ตัดสินใจเรื่องลดเลือด และมันเช็คทั้งช่วงฝนเพชรและช่วงผ่อนผันให้เองแล้ว
-        // (กันลืมเช็คซ้ำหลายที่)
-
-        // พลาดของ ถือว่าคอมโบขาดเช่นกัน (ขาดคอมโบได้ตามปกติ แม้ระหว่างฝนเพชรหรือช่วงผ่อนผัน)
+        
         comboCount = 0;
-        UpdateComboUI();
+        if (UiManager.Instance != null)
+            UiManager.Instance.UpdateCombo(comboCount);
 
         LoseLife(lifeLossPerMiss);
     }
@@ -195,42 +179,37 @@ public class GameManager : MonoBehaviour
     {
         diamondRainActive = true;
 
-        // เคลียร์ไอเทมที่ spawn ไปก่อนหน้านี้และยังตกค้างอยู่บนจอ (ที่ไม่ใช่เพชร) ทิ้งทันที
-        // เพื่อให้ช่วงฝนเพชรทั้ง 10 วิ เห็นแต่เพชรล้วนๆ จริงๆ ไม่มีของเก่า (rock/star/bomb) หลงเหลือให้เห็น
         ClearNonDiamondItemsOnScreen();
 
-        // เก็บค่า spawnInterval ปกติไว้ก่อน แล้วเปลี่ยนเป็นค่าถี่ขึ้นระหว่างฝนเพชร
         normalSpawnInterval = spawnInterval;
         spawnInterval = diamondRainSpawnInterval;
-        timer = 0f; // ให้ spawn ทันทีรอบแรกโดยไม่ต้องรอ interval เดิมนับต่อ
+        timer = 0f; 
 
         float remaining = diamondRainDuration;
         while (remaining > 0f)
         {
-            UpdateCountdownUI(remaining);
+            if (UiManager.Instance != null)
+                UiManager.Instance.UpdateCountdown(remaining);
             yield return null;
             remaining -= Time.deltaTime;
         }
 
-        UpdateCountdownUI(0f); // ซ่อนตัวเลขนับถอยหลังเมื่อหมดเวลา
+        if (UiManager.Instance != null)
+            UiManager.Instance.UpdateCountdown(0f); // ซ่อนตัวเลขนับถอยหลังเมื่อหมดเวลา
         diamondRainActive = false;
 
-        // คืนค่า spawnInterval กลับเป็นปกติหลังฝนเพชรจบ
+      
         spawnInterval = normalSpawnInterval;
 
-        // รีเซ็ตคอมโบทิ้งทันทีที่ฝนเพชรจบ (ครบ 10 วิพอดี) เพื่อความชัวร์
-        // หมายเหตุ: ตอนนี้ระหว่างฝนเพชร ItemCaught จะไม่นับคอมโบเพิ่มอยู่แล้ว (ดูเงื่อนไข !diamondRainActive)
-        // เพราะฉะนั้น comboCount ควรเป็น 0 อยู่แล้วตั้งแต่ก่อนเข้าฝนเพชร แต่รีเซ็ตซ้ำตรงนี้ไว้กันเหนียว
         comboCount = 0;
-        UpdateComboUI();
+        if (UiManager.Instance != null)
+            UiManager.Instance.UpdateCombo(comboCount);
 
-        // เข้าสู่ช่วงผ่อนผันหลังฝนเพชรจบ: ยังไม่ลด HP จนกว่าเพชรที่ค้างอยู่บนจอจะหมด
-        // หรือจนกว่าจะครบ postRainGracePeriod วินาที (ประมาณ 2-3 วิ) แล้วแต่อะไรถึงก่อน
+     
         yield return StartCoroutine(PostRainGraceRoutine());
     }
 
-    // ช่วงผ่อนผันหลังฝนเพชรจบ ระหว่างนี้ diamondRainActive เป็น false แล้ว
-    // แต่ยังไม่ลด HP เพื่อรอให้ผู้เล่นเก็บเพชรที่ยังร่วงค้างอยู่บนจอให้หมดก่อน
+    
     private IEnumerator PostRainGraceRoutine()
     {
         inPostRainGrace = true;
@@ -238,7 +217,7 @@ public class GameManager : MonoBehaviour
         float elapsed = 0f;
         while (elapsed < postRainGracePeriod)
         {
-            // ถ้าเพชรบนจอหมดแล้วก่อนครบเวลา ให้เลิกช่วงผ่อนผันได้เลยทันที ไม่ต้องรอจนครบ
+            
             if (!HasDiamondsOnScreen())
                 break;
 
@@ -249,7 +228,7 @@ public class GameManager : MonoBehaviour
         inPostRainGrace = false;
     }
 
-    // เช็คว่ายังมีเพชร (ที่ตกค้างจากฝนเพชร) อยู่บนจอไหม ใช้ตอนช่วงผ่อนผันเพื่อตัดสินใจว่าจะเลิกผ่อนผันเร็วขึ้นได้หรือยัง
+    
     private bool HasDiamondsOnScreen()
     {
         FallingItem[] itemsOnScreen = FindObjectsOfType<FallingItem>();
@@ -261,11 +240,10 @@ public class GameManager : MonoBehaviour
         return false;
     }
 
-    // เคลียร์ไอเทมทุกชิ้นที่กำลังร่วงอยู่บนจอตอนนี้ ยกเว้น Diamond ทิ้งทั้งหมด
-    // เรียกตอนเริ่มฝนเพชร เพื่อกันไม่ให้ของเก่า (rock/star/bomb) ที่ spawn ไปก่อนหน้าตกค้างให้เห็นระหว่างฝนเพชร
+    
     private void ClearNonDiamondItemsOnScreen()
     {
-        // ใช้ FindObjectsOfType เพราะไอเทมที่ร่วงอยู่ไม่ได้เก็บ reference ไว้ที่ GameManager
+       
         FallingItem[] itemsOnScreen = FindObjectsOfType<FallingItem>();
 
         foreach (FallingItem item in itemsOnScreen)
@@ -277,10 +255,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // จุดเดียวที่ตัดสินใจลดเลือดจริงๆ ในเกม
-    // ระหว่างฝนเพชร (diamondRainActive) หรือช่วงผ่อนผันหลังฝนเพชรจบ (inPostRainGrace)
-    // จะไม่มีการลดเลือดเด็ดขาด ไม่ว่าจะเรียกมาจากที่ไหนก็ตาม
-    // (ครอบคลุมทั้ง ItemMissed และ TakeBombDamage หรือโค้ดอื่นที่อาจเรียก LoseLife ในอนาคต)
+ 
     private void LoseLife(float amount)
     {
         if (diamondRainActive || inPostRainGrace)
@@ -290,7 +265,8 @@ public class GameManager : MonoBehaviour
         }
 
         currentHealth = Mathf.Max(0f, currentHealth - amount);
-        UpdateLivesUI();
+        if (UiManager.Instance != null)
+            UiManager.Instance.UpdateLives(currentHealth);
 
         if (currentHealth <= 0f)
         {
@@ -298,8 +274,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // เรียกจาก FallingItem.cs เมื่อ player เก็บ Bomb ได้โดยตรง (โดน OnTriggerEnter ไม่ใช่ตกพื้น)
-    // แยกจาก ItemMissed เพราะกรณีนี้คือ "โดนของ" ไม่ใช่ "พลาดของ"
     public void TakeBombDamage(float amount)
     {
         if (isGameOver) return;
@@ -307,92 +281,81 @@ public class GameManager : MonoBehaviour
         LoseLife(amount);
     }
 
-    // เรียกเมื่อพลังชีวิตหมด (หรือจะเรียกตอนโดน bomb ก็ได้ถ้าต้องการให้จบเกมทันที)
+    
     public void GameOver()
     {
-        if (isGameOver) return; // กันเรียกซ้ำ
+        if (isGameOver) return; 
 
         isGameOver = true;
 
-        // หยุด coroutine ทั้งหมดที่ยังค้างอยู่ (เช่นฝนเพชรหรือช่วงผ่อนผันที่กำลังนับถอยหลัง)
+       
         StopAllCoroutines();
 
-        // ถ้า GameOver เกิดขึ้นระหว่างฝนเพชรกำลังทำงานอยู่ ต้องคืนค่า spawnInterval เอง
-        // เพราะ StopAllCoroutines() ตัดจบ DiamondRainRoutine กลางคัน ทำให้ไม่ได้รันถึงบรรทัดคืนค่า
+        
         if (diamondRainActive)
         {
             spawnInterval = normalSpawnInterval;
         }
         diamondRainActive = false;
-        inPostRainGrace = false; // เคลียร์สถานะช่วงผ่อนผันด้วย เผื่อ GameOver เกิดขึ้นพอดีระหว่างช่วงผ่อนผัน
-        UpdateCountdownUI(0f); // เคลียร์ตัวเลขนับถอยหลังบนจอ ถ้ามีค้างอยู่
+        inPostRainGrace = false; 
 
-        // ดึง Best Score เดิมที่เคยบันทึกไว้ในเครื่อง (ถ้าไม่เคยมีมาก่อนให้เริ่มที่ 0)
+        if (UiManager.Instance != null)
+            UiManager.Instance.UpdateCountdown(0f); // เคลียร์ตัวเลขนับถอยหลังบนจอ ถ้ามีค้างอยู่
+
         float previousBest = PlayerPrefs.GetFloat(BestScoreKey, 0f);
 
-        // เช็คว่าตานี้ทำคะแนนได้มากกว่าสถิติเดิมหรือไม่
+      
         bool isNewBest = score > previousBest;
         float bestScore = isNewBest ? score : previousBest;
 
-        // ถ้าทำลายสถิติ ให้บันทึกค่าใหม่ลง PlayerPrefs แบบถาวร
+      
         if (isNewBest)
         {
             PlayerPrefs.SetFloat(BestScoreKey, bestScore);
-            PlayerPrefs.Save(); // เขียนลงดิสก์ทันที กันเกม/แอปปิดกะทันหันแล้วข้อมูลหาย
+            PlayerPrefs.Save(); 
         }
 
-        if (gameOverPanel != null)
-            gameOverPanel.SetActive(true);
-
-        // แสดงคะแนนที่ได้ในตานี้ และ Best Score บน UI ตอนจบเกม
-        if (finalScoreText != null)
-            finalScoreText.text = "Score: " + score.ToString("0.0");
-
-        if (bestScoreText != null)
-            bestScoreText.text = "Best Score: " + bestScore.ToString("0.0");
+        
+        if (UiManager.Instance != null)
+            UiManager.Instance.ShowGameOver(score, bestScore, isNewBest);
 
         Debug.Log($"Game Over! Final Score: {score} | Best Score: {bestScore} {(isNewBest ? "(สถิติใหม่!)" : "")}");
 
-        // หยุดเวลาทั้งเกม — ไอเทมที่กำลังร่วงอยู่ (เคลื่อนที่ด้วย Time.deltaTime) จะหยุดนิ่งทันที
+       
         Time.timeScale = 0f;
     }
 
-    // เรียกตอนกดปุ่ม Pause (ปุ่ม UI หรือคีย์บอร์ด)
+   
     public void PauseGame()
     {
-        if (isGameOver || isPaused) return; 
+        if (isGameOver || isPaused) return;
 
-        
-        Time.timeScale = 0f; // หยุดเวลาทั้งเกม ไอเทมที่ร่วงอยู่จะหยุดนิ่งทันที
-
-        
+        isPaused = true;
+        Time.timeScale = 0f; 
     }
 
-    // เรียกตอนกดปุ่ม Resume บน Pause Panel (หรือกด Escape ซ้ำ)
+ 
     public void ResumeGame()
     {
-        if (isGameOver || !isPaused) return; // กันกด resume ตอนเกมจบ หรือกดตอนไม่ได้ pause อยู่
+        if (isGameOver || !isPaused) return; 
 
-      
-        Time.timeScale = 1f; // คืนเวลาให้เกมเดินต่อตามปกติ
-
-        
+        isPaused = false;
+        Time.timeScale = 1f; 
     }
 
-    // เรียกตอนกดปุ่ม Restart บนหน้า Game Over Panel
     public void RestartGame()
     {
-        isPaused = false; // เคลียร์สถานะ pause ก่อนโหลดฉากใหม่
-        Time.timeScale = 1f; // คืนค่าเวลาปกติก่อนโหลดฉากใหม่ ไม่งั้นเกมรอบใหม่จะค้างนิ่ง
+        isPaused = false; 
+        Time.timeScale = 1f; 
         UnityEngine.SceneManagement.SceneManager.LoadScene(
             UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex
         );
     }
 
-    // เรียกตอนกดปุ่ม Exit ในหน้าเกมเพลย์ (Scene01) เพื่อออกจากเกมทั้งหมด
+  
     public void ExitGame()
     {
-        Time.timeScale = 1f; // คืนค่าเวลาปกติก่อนออก เผื่อกดตอนเกม pause อยู่ (เช่นตอน Game Over หรือ Pause)
+        Time.timeScale = 1f; 
 
         Debug.Log("Exit Game ถูกกด");
 
@@ -400,49 +363,15 @@ public class GameManager : MonoBehaviour
         // ตอนทดสอบใน Unity Editor ให้หยุด Play Mode แทน เพราะ Application.Quit() ไม่ทำงานใน Editor
         UnityEditor.EditorApplication.isPlaying = false;
 #else
-        // ตอน build จริงเป็น .exe / .apk ฯลฯ จะปิดแอปพลิเคชันจริง
+      
         Application.Quit();
 #endif
     }
 
-    // เผื่ออยากรีเซ็ต Best Score ตอนทดสอบ (คลิกขวาที่ component ใน Inspector แล้วเลือกคำสั่งนี้)
     [ContextMenu("Reset Best Score")]
     public void ResetBestScore()
     {
         PlayerPrefs.DeleteKey(BestScoreKey);
         Debug.Log("[GameManager] Best Score ถูกรีเซ็ตแล้ว");
-    }
-
-    void UpdateScoreUI()
-    {
-        if (scoreText != null)
-            scoreText.text = "Score: " + score.ToString("0.0"); // แสดงทศนิยม 1 ตำแหน่ง เช่น 0.5, 1.0, 10.0
-    }
-
-    void UpdateLivesUI()
-    {
-        if (livesText != null)
-            livesText.text = "HP: " + currentHealth.ToString("0");
-    }
-
-    void UpdateComboUI()
-    {
-        if (comboText != null)
-            comboText.text = "Combo: " + comboCount;
-    }
-
-    void UpdateCountdownUI(float secondsRemaining)
-    {
-        if (countdownText == null) return;
-
-        if (secondsRemaining <= 0f)
-        {
-            countdownText.text = "";
-        }
-        else
-        {
-            // ปัดขึ้นให้ขึ้นเลขเต็ม เช่น 2.9 วิ ให้แสดง "3"
-            countdownText.text = Mathf.CeilToInt(secondsRemaining).ToString();
-        }
     }
 }
