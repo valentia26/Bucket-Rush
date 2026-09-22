@@ -75,6 +75,8 @@ public class GameManager : MonoBehaviour
         if (gameOverPanel != null)
             gameOverPanel.SetActive(false);
 
+        if (pausePanel != null)
+            pausePanel.SetActive(false);
     }
 
     void Update()
@@ -305,6 +307,9 @@ public class GameManager : MonoBehaviour
 
         isPaused = true;
         Time.timeScale = 0f;
+
+        if (pausePanel != null)
+            pausePanel.SetActive(true);
     }
 
     public void ResumeGame()
@@ -313,6 +318,9 @@ public class GameManager : MonoBehaviour
 
         isPaused = false;
         Time.timeScale = 1f;
+
+        if (pausePanel != null)
+            pausePanel.SetActive(false);
     }
 
     public void RestartGame()
